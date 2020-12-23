@@ -61,6 +61,9 @@ class Janus:
             st.stop()
 
     def reset_current_session(self, mode="Exploratory"):
+        """
+        Reset the current session. Adds current session to session history and starts a new session.
+        """
         # Append the current session to the session history
         self.session_history.append(copy.deepcopy(self.current_session))
 
