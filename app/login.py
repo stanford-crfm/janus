@@ -20,7 +20,7 @@ def load_login_information():
     if not os.path.exists('data/users.jsonl'):
         # Create the data folder with an empty users file
         os.makedirs('data', exist_ok=True)
-        with open('data/users.jsonl'):
+        with open('data/users.jsonl', 'w'):
             pass
 
     login_information = {}
