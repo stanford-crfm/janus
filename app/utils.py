@@ -32,8 +32,9 @@ def get_user_history(username: str):
     session_history = []
     if os.path.exists(f'data/{username}'):
         session_files = natsorted(list(glob.glob(f'data/{username}/session_*.pkl')))
-        last_session_id = int(session_files[-1].split("_")[1].split(".")[0])
-        session_history = [pickle.load(open(file, 'rb')) for file in session_files]
+        if session_files:
+            last_session_id = int(session_files[-1].split("_")[1].split(".")[0])
+            session_history = [pickle.load(open(file, 'rb')) for file in session_files]
 
     return SimpleNamespace(
         session_id=last_session_id + 1,
