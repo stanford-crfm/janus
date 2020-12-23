@@ -20,7 +20,7 @@ class Janus:
         # Text generator
         self.generator = generator
 
-        self.currentSession = current_session
+        self.current_session = current_session
         self.model_settings = model_settings
         self.session_history = session_history
 
@@ -52,8 +52,8 @@ class Janus:
         self.layout_sidebar()
 
         # Start the application
-        if self.currentSession.mode in self.modes:
-            if self.currentSession.mode == 'Review':
+        if self.current_session.mode in self.modes:
+            if self.current_session.mode == 'Review':
                 self.layout_review()
             else:
                 self.layout_body()
@@ -62,21 +62,21 @@ class Janus:
 
     def reset_current_session(self, mode="Exploratory"):
         # Append the current session to the session history
-        self.session_history.append(copy.deepcopy(self.currentSession))
+        self.session_history.append(copy.deepcopy(self.current_session))
 
         # Create a new empty session
-        self.currentSession.mode = mode
-        self.currentSession.id += 1
-        self.currentSession.name = None
-        self.currentSession.description = None
-        self.currentSession.generations = []
-        self.currentSession.favorites = set()
+        self.current_session.mode = mode
+        self.current_session.id += 1
+        self.current_session.name = None
+        self.current_session.description = None
+        self.current_session.generations = []
+        self.current_session.favorites = set()
 
     def save_current_session(self):
         """
         Save the current session object.
         """
-        self.currentSession.to_pickle(os.path.join('data', self.username, f'session_{self.currentSession.id}.pkl'))
+        self.current_session.to_pickle(os.path.join('data', self.username, f'session_{self.current_session.id}.pkl'))
 
     def save_all_sessions(self):
         """
@@ -97,20 +97,20 @@ class Janus:
         mode = st.sidebar.radio("Mode", list(self.modes.keys()))
 
         # If mode changed or new session started, and the old session was in progress
-        if (self.currentSession.mode != mode or new_session) and self.currentSession.generations:
+        if (self.current_session.mode != mode or new_session) and self.current_session.generations:
             # Save the current session and reset it
             self.save_current_session()
             self.reset_current_session(mode)
-        elif self.currentSession.mode != mode:
-            self.currentSession.mode = mode
+        elif self.current_session.mode != mode:
+            self.current_session.mode = mode
 
         # Set the session name
-        st.sidebar.write("**Session ID:**", self.currentSession.id)
-        if not self.currentSession.name:
+        st.sidebar.write("**Session ID:**", self.current_session.id)
+        if not self.current_session.name:
             session_name = st.sidebar.text_area("Session Name", height=20)
-            self.currentSession.name = session_name
+            self.current_session.name = session_name
         else:
-            st.sidebar.write("**Session Name:**", self.currentSession.name)
+            st.sidebar.write("**Session Name:**", self.current_session.name)
 
         with st.sidebar.beta_expander("Model Settings"):
             num_tokens = st.slider("How many tokens to generate?",
@@ -157,7 +157,7 @@ class Janus:
             )
 
             # Add a generation
-            self.currentSession.generations.append(
+            self.current_session.generations.append(
                 Generation(
                     model=self.generator.model,
                     config=self.model_settings,
@@ -172,20 +172,20 @@ class Janus:
 
         with variation:
             st.subheader('**Current variation**')
-            if self.currentSession.generations:
-                st.write('**Input:** ', self.currentSession.generations[-1].input)
-                st.write('**Output:** ', self.currentSession.generations[-1].output)
+            if self.current_session.generations:
+                st.write('**Input:** ', self.current_session.generations[-1].input)
+                st.write('**Output:** ', self.current_session.generations[-1].output)
             else:
                 st.write("Nothing yet!")
 
         with attribute:
-            if self.currentSession.mode == 'Exploratory':
+            if self.current_session.mode == 'Exploratory':
                 st.subheader('**Attributes**')
                 att = st.multiselect(
                     'Select descriptive attributes',
                     self.attributes,
                 )
-            elif self.currentSession.mode == 'Annotation':
+            elif self.current_session.mode == 'Annotation':
                 st.subheader('**Label**')
                 att = st.radio(
                     'Select descriptive attributes',
@@ -193,18 +193,18 @@ class Janus:
                 )
 
         # Set the attributes
-        if self.currentSession.generations:
-            self.currentSession.generations[-1].labels = set(att)
+        if self.current_session.generations:
+            self.current_session.generations[-1].labels = set(att)
 
         save = st.button("Save Variation")
-        if save and self.currentSession.generations:
+        if save and self.current_session.generations:
             # Store as a favorite
-            self.currentSession.favorites.add(len(self.currentSession.generations) - 1)
+            self.current_session.favorites.add(len(self.current_session.generations) - 1)
 
         # Display saved variations
         with st.beta_expander("Show Saved Variations"):
-            for i, idx in enumerate(self.currentSession.favorites):
-                generation = self.currentSession.generations[idx]
+            for i, idx in enumerate(self.current_session.favorites):
+                generation = self.current_session.generations[idx]
                 st.write('**Variation:** ', i)
                 st.write('**Input:** ', generation.input)
                 st.write('**Output:** ', generation.output)
@@ -214,11 +214,11 @@ class Janus:
         """
         Create an area for reviewing old or saved sessions.
         """
-        if self.currentSession.id == 2:
+        if self.current_session.id == 2:
             st.write("No sessions to review.")
             st.stop()
 
-        session_id = st.select_slider('Select Session', options=range(1, self.currentSession.id))
+        session_id = st.select_slider('Select Session', options=range(1, self.current_session.id))
         session = self.session_history[session_id - 1]
 
         only_saved = st.radio('Generations to Display', options=['Saved', 'All'])
