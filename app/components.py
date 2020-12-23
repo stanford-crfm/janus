@@ -214,13 +214,11 @@ class Janus:
         """
         Create an area for reviewing old or saved sessions.
         """
-        st.write(self.session_history)
         if self.currentSession.id == 2:
             st.write("No sessions to review.")
             st.stop()
 
         session_id = st.select_slider('Select Session', options=range(1, self.currentSession.id))
-        st.write(session_id)
         session = self.session_history[session_id - 1]
 
         only_saved = st.radio('Generations to Display', options=['Saved', 'All'])
