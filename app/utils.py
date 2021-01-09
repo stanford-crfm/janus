@@ -75,8 +75,9 @@ class Session:
     # Favorited indices
     favorites: Set[int]
 
+    # Attributes to label generated text
+    attributes: list
+    
     def to_pickle(self, path: str):
-        # st.write(path)
-        # os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'wb') as outfile:
             pickle.dump(self, outfile)

@@ -6,6 +6,7 @@ import streamlit as st
 
 from app.model import TextGenerator
 from app.utils import Generation, Session
+from app.globals import TEXT_GENERATION_ATTRIBUTES
 
 
 class Janus:
@@ -24,26 +25,13 @@ class Janus:
         self.model_settings = model_settings
         self.session_history = session_history
 
-        # List of attributes used for labeling text generation
-        self.attributes = [
-            'Common Sense',
-            'Storytelling',
-            'Informative',
-            'Logical Reasoning',
-            'Question Answering',
-            'Factual',
-            'Toxic',
-            'Biased',
-        ]
-
         self.modes = {
             'Exploratory': 0,
             'Annotation': 1,
             'Review': 2,
         }
 
-        self.username = username
-
+        self.username = username        
 
     def start(self):
         """
@@ -75,11 +63,14 @@ class Janus:
         self.current_session.description = None
         self.current_session.generations = []
         self.current_session.favorites = set()
+        self.current_session.attributes = TEXT_GENERATION_ATTRIBUTES
 
     def save_current_session(self):
         """
         Save the current session object.
         """
+        if not os.path.exists(os.path.join('data', self.username)):
+            os.makedirs(os.path.join('data', self.username))
         self.current_session.to_pickle(os.path.join('data', self.username, f'session_{self.current_session.id}.pkl'))
 
     def save_all_sessions(self):
@@ -87,6 +78,8 @@ class Janus:
         Save the user's session history.
         """
         self.reset_current_session()
+        if not os.path.exists(os.path.join('data', self.username)):
+            os.makedirs(os.path.join('data', self.username))
         for sess in self.session_history:
             sess.to_pickle(os.path.join('data', self.username, f'session_{sess.id}.pkl'))
 
@@ -137,11 +130,6 @@ class Janus:
                 'top_k': top_k
             }
 
-        with st.sidebar.beta_expander("Attribute Settings"):
-            new_attribute = st.text_input(label="New Attribute", max_chars=40)
-            if st.button("Add Attribute"):
-                self.attributes.append(new_attribute)
-
         if st.sidebar.button("Save All Sessions"):
             self.save_all_sessions()
 
@@ -172,7 +160,7 @@ class Janus:
                 )
             )
 
-        variation, attribute = st.beta_columns(2)
+        variation, attribute = st.beta_columns([3,2])
 
         with variation:
             st.subheader('**Current variation**')
@@ -183,12 +171,17 @@ class Janus:
                 st.write("Nothing yet!")
 
         with attribute:
+            with st.beta_expander('Add New Attribute'):
+                new_attribute = st.text_input(label="New Attribute", max_chars=40, key=len(self.current_session.attributes))
+                if st.button("Add Attribute"):
+                    self.current_session.attributes.append(new_attribute)
+
             if self.current_session.mode == 'Exploratory':
                 st.subheader('**Attributes**')
                 att = st.multiselect(
                     'Select descriptive attributes',
-                    self.attributes,
-                    key=len(self.current_session.generations)
+                    self.current_session.attributes,
+                    key=len(self.current_session.generations) + len(self.current_session.attributes)
                 )
             elif self.current_session.mode == 'Annotation':
                 st.subheader('**Label**')
