@@ -44,6 +44,7 @@ class Janus:
 
         self.username = username
 
+
     def start(self):
         """
         Start the main application.
@@ -187,12 +188,14 @@ class Janus:
                 att = st.multiselect(
                     'Select descriptive attributes',
                     self.attributes,
+                    key=len(self.current_session.generations)
                 )
             elif self.current_session.mode == 'Annotation':
                 st.subheader('**Label**')
                 att = st.radio(
                     'Select descriptive attributes',
                     ('Success', 'Failure'),
+                    key=len(self.current_session.generations)
                 )
 
         # Set the attributes
@@ -203,6 +206,7 @@ class Janus:
         if save and self.current_session.generations:
             # Store as a favorite
             self.current_session.favorites.add(len(self.current_session.generations) - 1)
+            
 
         # Display saved variations
         with st.beta_expander("Show Saved Variations"):
