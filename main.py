@@ -7,6 +7,7 @@ from app.components import Janus
 from app.login import login_widget
 from app.model import instantiate_generator
 from app.utils import Session, get_user_history
+from app.globals import TEXT_GENERATION_ATTRIBUTES 
 
 if __name__ == '__main__':
     # Create a session state
@@ -17,7 +18,8 @@ if __name__ == '__main__':
                                 name="",
                                 description="",
                                 generations=[],
-                                favorites=set()),
+                                favorites=set(),
+                                attributes=TEXT_GENERATION_ATTRIBUTES),
         model_settings={},
         session_history=[],
         app_state={},
