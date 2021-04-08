@@ -7,7 +7,6 @@ dependencies:
   - ca-certificates=2020.12.8
   - certifi=2020.12.5
   - intel-openmp=2019.4
-  - libcxx=10.0.0
   - libedit=3.1.20191231
   - libffi=3.3
   - libuv=1.40.0
