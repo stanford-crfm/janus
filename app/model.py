@@ -86,7 +86,7 @@ class TextGenerator:
         tokenizer = AutoTokenizer.from_pretrained(f"{checkpoint_path}")
 
         return pipeline("text-generation", model=model, tokenizer=tokenizer,
-                        device=self._device)
+                        device={'cpu': -1, 'cuda': 0}[self._device])
 
     def load_generator(self) -> TextGenerationPipeline:
         """
@@ -100,7 +100,7 @@ class TextGenerator:
             return pipeline(
                 'text-generation',
                 model=HUGGINGFACE_MODELS[self.model_name],
-                device=self._device,
+                device={'cpu': -1, 'cuda': 0}[self._device],
             )
         else:
             raise NotImplementedError(
