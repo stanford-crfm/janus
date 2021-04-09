@@ -85,7 +85,8 @@ class TextGenerator:
             eval().to(self._device)
         tokenizer = AutoTokenizer.from_pretrained(f"{checkpoint_path}")
 
-        return pipeline("text-generation", model=model, tokenizer=tokenizer)
+        return pipeline("text-generation", model=model, tokenizer=tokenizer,
+                        device=self._device)
 
     def load_generator(self) -> TextGenerationPipeline:
         """
@@ -98,7 +99,8 @@ class TextGenerator:
             # model: gpt2, gpt2-large
             return pipeline(
                 'text-generation',
-                model=HUGGINGFACE_MODELS[self.model_name]
+                model=HUGGINGFACE_MODELS[self.model_name],
+                device=self._device,
             )
         else:
             raise NotImplementedError(
@@ -116,7 +118,6 @@ class TextGenerator:
         """
         Generate text using the language model.
         """
-        # TODO(karan): check that this all works with Tempest
         return self.generator(
             starting_text,
             max_length=max_length,
