@@ -137,6 +137,7 @@ def instantiate_generator(
         checkpoint: str,
         checkpoint_path: Path,
         seed: int = 42,
+        device: str = None,
 ):
     """
     Create a generator.
@@ -147,6 +148,7 @@ def instantiate_generator(
         checkpoint=checkpoint,
         checkpoint_path=checkpoint_path,
         seed=seed,
+        device=device,
     )
 
 
