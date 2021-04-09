@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from types import SimpleNamespace
 
 import streamlit as st
@@ -10,6 +11,10 @@ from app.utils import Session, get_user_history
 from app.globals import TEXT_GENERATION_ATTRIBUTES 
 
 if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('--device', default=None)
+    args = parser.parse_args()
+    
     # Create a session state
     application_state = get_app_state(
         login_state=SimpleNamespace(username=None, successful=False, registering=False),
@@ -40,7 +45,7 @@ if __name__ == '__main__':
     # Create a generator using a model checkpoint
     checkpoint_info = checkpoint_widget()
     application_state.checkpoint_info = checkpoint_info.__dict__
-    generator = instantiate_generator(**checkpoint_info.__dict__)
+    generator = instantiate_generator(**checkpoint_info.__dict__, device=args.device)
 
     # Create the application
     janus = Janus(

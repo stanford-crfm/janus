@@ -23,6 +23,7 @@ class TextGenerator:
             checkpoint: str,
             checkpoint_path: Path,
             seed: int = 42,
+            device: str = None,
     ):
 
         # store the parameters
@@ -36,7 +37,9 @@ class TextGenerator:
         set_seed(seed)
 
         # set the device
-        self._device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self._device = device
+        if device is None:
+            self._device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         # load the language model
         self.generator = self.load_generator()
@@ -51,11 +54,11 @@ class TextGenerator:
 
     def get_checkpoint_info_string(self):
         if self.model_source == "Mercury":
-            return f'Source: {self.model_source}\t' \
-                   f'Model: {self.model_name}\t' \
+            return f'Source: {self.model_source}\n' \
+                   f'Model: {self.model_name}\n' \
                    f'Checkpoint: {self.checkpoint}'
         elif self.model_source == 'Huggingface':
-            return f'Source: {self.model_source}\t' \
+            return f'Source: {self.model_source}\n' \
                    f'Model: {self.model_name}'
         else:
             raise NotImplementedError(
