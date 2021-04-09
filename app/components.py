@@ -142,7 +142,9 @@ class Janus:
         Layout the main body of the application.
         """
         # Subtitle
-        st.markdown(f'##### {self.generator.get_checkpoint_info_string()}')
+        subtitles = self.generator.get_checkpoint_info_string().split("\n")
+        for subtitle in subtitles:
+            st.markdown(f'##### {subtitle}')
 
         # Heading for main body
         text = st.text_area("Prime GPT-X: Generate conditional outputs", height=100)
