@@ -30,6 +30,7 @@ class Janus:
             'Exploratory': 0,
             'Annotation': 1,
             'Review': 2,
+            'Compare': 3,
         }
 
         self.username = username
@@ -45,6 +46,8 @@ class Janus:
         if self.current_session.mode in self.modes:
             if self.current_session.mode == 'Review':
                 self.layout_review()
+            elif self.current_session.mode == 'Compare':
+                self.layout_compare()
             else:
                 self.layout_body()
         else:
@@ -52,7 +55,8 @@ class Janus:
 
     def reset_current_session(self, mode="Exploratory"):
         """
-        Reset the current session. Adds current session to session history and starts a new session.
+        Reset the current session.
+        Adds current session to session history and starts a new session.
         """
         # Append the current session to the session history
         self.session_history.append(copy.deepcopy(self.current_session))
@@ -72,8 +76,10 @@ class Janus:
         """
         if not os.path.exists(os.path.join('data', self.username)):
             os.makedirs(os.path.join('data', self.username))
-        self.current_session.to_pickle(os.path.join('data', self.username,
-                                                    f'session_{self.current_session.id}.pkl'))
+        self.current_session.to_pickle(
+            os.path.join('data', self.username,
+                         f'session_{self.current_session.id}.pkl')
+        )
 
     def save_all_sessions(self):
         """
@@ -97,8 +103,8 @@ class Janus:
         mode = st.sidebar.radio("Mode", list(self.modes.keys()))
 
         # If mode changed or new session started, and the old session was in progress
-        if (
-                self.current_session.mode != mode or new_session) and self.current_session.generations:
+        if (self.current_session.mode != mode or new_session) \
+                and self.current_session.generations:
             # Save the current session and reset it
             self.save_current_session()
             self.reset_current_session(mode)
@@ -117,14 +123,16 @@ class Janus:
             num_tokens = st.slider("How many tokens to generate?",
                                    min_value=0, max_value=500, value=30)
             temperature = st.slider(
-                "What temperature to use for generation (high = more stochastic, low = determinstic)?",
-                min_value=0., max_value=1., value=1.)
+                "What temperature to use for generation "
+                "(high = more stochastic, low = determinstic)?",
+                min_value=1e-10, max_value=1., value=1.)
             top_p = st.slider(
                 "Top_p: the most probable tokens with probabilities that "
                 "add up to top_p or higher are kept for generation.",
                 min_value=0., max_value=1., value=1.)
             top_k = int(st.slider(
-                "Top_k: the number of highest probability vocabulary tokens to keep for top-k-filtering.",
+                "Top_k: the number of highest probability vocabulary "
+                "tokens to keep for top-k-filtering.",
                 min_value=1, max_value=1000, value=50))
 
             self.model_settings = {
@@ -222,11 +230,13 @@ class Janus:
         Create an area for reviewing old or saved sessions.
         """
         if self.current_session.id == 2:
-            st.write("No sessions to review.")
+            st.write("Add at least one more session to start reviewing.")
             st.stop()
 
-        session_id = st.select_slider('Select Session',
-                                      options=range(1, self.current_session.id))
+        session_id = st.select_slider(
+            'Select Session',
+            options=range(1, self.current_session.id)
+        )
         session = self.session_history[session_id - 1]
 
         only_saved = st.radio('Generations to Display', options=['Saved', 'All'])
@@ -244,3 +254,59 @@ class Janus:
                 st.write('**Input:** ', generation.input)
                 st.write('**Output:** ', generation.output)
                 st.write('**Attributes:** ', ", ".join(generation.labels))
+
+    def layout_compare(self):
+        """
+        Create an area for comparing generations.
+        """
+
+        if self.current_session.id == 2:
+            st.write("Add at least one more session to start reviewing.")
+            st.stop()
+
+        def _layout_column(key: str):
+            # Select a session
+            session_id = st.select_slider(
+                'Select Session',
+                options=range(1, self.current_session.id),
+                key=key,
+            )
+            session = self.session_history[session_id - 1]
+
+            # Select what generations to display
+            only_saved = st.radio(
+                'Generations to Display', options=['Saved', 'All'], key=key)
+
+            # Select the generation index
+            if only_saved == 'Saved':
+                generation_index = st.select_slider(
+                    'Select Saved Generation',
+                    options=list(session.favorites),
+                    key=key
+                )
+            else:
+                generation_index = st.select_slider(
+                    'Select Generation',
+                    options=range(len(session.generations)),
+                    key=key
+                )
+
+            # Display the generation
+            generation = session.generations[generation_index]
+            st.write('**Variation:** ', generation_index)
+            st.write('**Model Source**', generation.checkpoint['model_source'])
+            st.write('**Model Name**', generation.model)
+            st.write('**Checkpoint**', generation.checkpoint['checkpoint'])
+            st.write('**Input:** ', generation.input)
+            st.write('**Output:** ', generation.output)
+            st.write('**Attributes:** ', ", ".join(generation.labels))
+
+        # Create a split view
+        col1, _, col2 = st.beta_columns([0.4, 0.2, 0.4])
+
+        # Populate both columns
+        with col1:
+            _layout_column('1')
+
+        with col2:
+            _layout_column('2')

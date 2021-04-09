@@ -64,8 +64,12 @@ def login_user(
         login_state.registering = True
 
         # Ask for a master password to register the user
-        message_placeholder.warning("Username not found. Please enter master password to add your profile.")
-        master_password = alt_placeholder.text_input("Master Password:", value="", type="password")
+        message_placeholder.warning(
+            "Username not found. Please enter master password to add your profile."
+        )
+        master_password = alt_placeholder.text_input(
+            "Master Password:", value="", type="password"
+        )
 
         if hashlib.sha224(master_password.encode()).hexdigest() == \
                 'c365773db5ed50c3fc7c6bc197f529f1b2c973f1c7c3f7da6d8c01e7':

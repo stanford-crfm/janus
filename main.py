@@ -32,6 +32,7 @@ if __name__ == '__main__':
     )
 
     # The main title
+    st.set_page_config(page_title='Janus')
     st.title(":rocket: Janus: Write with Mercury")
 
     # Login the user
