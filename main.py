@@ -5,7 +5,7 @@ import streamlit as st
 from app.SessionState import get as get_app_state
 from app.components import Janus
 from app.login import login_widget
-from app.model import instantiate_generator
+from app.model import instantiate_generator, checkpoint_widget
 from app.utils import Session, get_user_history
 from app.globals import TEXT_GENERATION_ATTRIBUTES 
 
@@ -21,6 +21,7 @@ if __name__ == '__main__':
                                 favorites=set(),
                                 attributes=TEXT_GENERATION_ATTRIBUTES),
         model_settings={},
+        checkpoint_info={},
         session_history=[],
         app_state={},
     )
@@ -36,8 +37,10 @@ if __name__ == '__main__':
     application_state.current_session.id = user_history.session_id
     application_state.session_history = user_history.session_history
 
-    # Create a generator
-    generator = instantiate_generator(model='gpt2')
+    # Create a generator using a model checkpoint
+    checkpoint_info = checkpoint_widget()
+    application_state.checkpoint_info = checkpoint_info.__dict__
+    generator = instantiate_generator(**checkpoint_info.__dict__)
 
     # Create the application
     janus = Janus(

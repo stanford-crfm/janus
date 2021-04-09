@@ -23,6 +23,7 @@ class Janus:
 
         self.current_session = current_session
         self.model_settings = model_settings
+        self.checkpoint_info = generator.get_checkpoint_info()
         self.session_history = session_history
 
         self.modes = {
@@ -31,7 +32,7 @@ class Janus:
             'Review': 2,
         }
 
-        self.username = username        
+        self.username = username
 
     def start(self):
         """
@@ -71,7 +72,8 @@ class Janus:
         """
         if not os.path.exists(os.path.join('data', self.username)):
             os.makedirs(os.path.join('data', self.username))
-        self.current_session.to_pickle(os.path.join('data', self.username, f'session_{self.current_session.id}.pkl'))
+        self.current_session.to_pickle(os.path.join('data', self.username,
+                                                    f'session_{self.current_session.id}.pkl'))
 
     def save_all_sessions(self):
         """
@@ -81,7 +83,8 @@ class Janus:
         if not os.path.exists(os.path.join('data', self.username)):
             os.makedirs(os.path.join('data', self.username))
         for sess in self.session_history:
-            sess.to_pickle(os.path.join('data', self.username, f'session_{sess.id}.pkl'))
+            sess.to_pickle(
+                os.path.join('data', self.username, f'session_{sess.id}.pkl'))
 
     def layout_sidebar(self):
         """
@@ -94,7 +97,8 @@ class Janus:
         mode = st.sidebar.radio("Mode", list(self.modes.keys()))
 
         # If mode changed or new session started, and the old session was in progress
-        if (self.current_session.mode != mode or new_session) and self.current_session.generations:
+        if (
+                self.current_session.mode != mode or new_session) and self.current_session.generations:
             # Save the current session and reset it
             self.save_current_session()
             self.reset_current_session(mode)
@@ -137,6 +141,9 @@ class Janus:
         """
         Layout the main body of the application.
         """
+        # Subtitle
+        st.markdown(f'## {self.generator.get_checkpoint_info_string()}')
+
         # Heading for main body
         text = st.text_area("Prime GPT-X: Generate conditional outputs", height=100)
 
@@ -151,8 +158,9 @@ class Janus:
             # Add a generation
             self.current_session.generations.append(
                 Generation(
-                    model=self.generator.model,
+                    model=self.generator.model_name,
                     config=self.model_settings,
+                    checkpoint=self.checkpoint_info,
                     input=text,
                     output=out,
                     labels=set(),
@@ -160,7 +168,7 @@ class Janus:
                 )
             )
 
-        variation, attribute = st.beta_columns([3,2])
+        variation, attribute = st.beta_columns([3, 2])
 
         with variation:
             st.subheader('**Current variation**')
@@ -172,7 +180,8 @@ class Janus:
 
         with attribute:
             with st.beta_expander('Add New Attribute'):
-                new_attribute = st.text_input(label="New Attribute", max_chars=40, key=len(self.current_session.attributes))
+                new_attribute = st.text_input(label="New Attribute", max_chars=40,
+                                              key=len(self.current_session.attributes))
                 if st.button("Add Attribute"):
                     self.current_session.attributes.append(new_attribute)
 
@@ -181,7 +190,8 @@ class Janus:
                 att = st.multiselect(
                     'Select descriptive attributes',
                     self.current_session.attributes,
-                    key=len(self.current_session.generations) + len(self.current_session.attributes)
+                    key=len(self.current_session.generations) + len(
+                        self.current_session.attributes)
                 )
             elif self.current_session.mode == 'Annotation':
                 st.subheader('**Label**')
@@ -198,8 +208,8 @@ class Janus:
         save = st.button("Save Variation")
         if save and self.current_session.generations:
             # Store as a favorite
-            self.current_session.favorites.add(len(self.current_session.generations) - 1)
-            
+            self.current_session.favorites.add(
+                len(self.current_session.generations) - 1)
 
         # Display saved variations
         with st.beta_expander("Show Saved Variations"):
@@ -218,7 +228,8 @@ class Janus:
             st.write("No sessions to review.")
             st.stop()
 
-        session_id = st.select_slider('Select Session', options=range(1, self.current_session.id))
+        session_id = st.select_slider('Select Session',
+                                      options=range(1, self.current_session.id))
         session = self.session_history[session_id - 1]
 
         only_saved = st.radio('Generations to Display', options=['Saved', 'All'])

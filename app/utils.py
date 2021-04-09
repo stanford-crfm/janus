@@ -46,6 +46,8 @@ def get_user_history(username: str):
 class Generation:
     # Model name
     model: str
+    # Model checkpoint info
+    checkpoint: dict
     # Model config info
     config: dict
 
