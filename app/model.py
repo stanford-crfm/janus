@@ -3,6 +3,7 @@ from glob import glob
 from pathlib import Path
 from types import SimpleNamespace
 
+import os
 import streamlit as st
 import torch
 from transformers import pipeline, set_seed, TextGenerationPipeline, \
@@ -166,8 +167,9 @@ def get_checkpoints(
     """
 
     # Get the list of all files and folders in the directory
+    print(path)
     candidate_paths = [Path(p) for p in glob(str(path / "*"))]
-
+    print(candidate_paths)
     # Filter out only the checkpoints
     if not is_checkpoint_fn:
         is_checkpoint_fn = lambda p: p.resolve().name.startswith("checkpoint-")
@@ -187,6 +189,12 @@ def get_checkpoints(
 
 def checkpoint_widget():
     """Widget for selecting a model and checkpoint."""
+    # Check if mercury paths exists before offering as option
+    for model, path in MERCURY_PATHS.items():
+        if not os.path.exists(path):
+            if 'Mercury' in MODEL_SOURCES:
+                MODEL_SOURCES.remove('Mercury')
+
     # Select the model source
     model_source = st.sidebar.radio("Model Source", options=MODEL_SOURCES)
 
