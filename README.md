@@ -4,6 +4,9 @@ An interactive interface for GPT-X, built with Streamlit.
 ## Setup on Stanford NLP Cluster
 
 ```shell script
+# Get a GPU machine: Titan-X is known to work while K40 does not
+nlprun -a janus -g 1 -s bash
+
 # Clone the repository
 git clone https://github.com/stanford-mercury/janus.git
 cd janus
