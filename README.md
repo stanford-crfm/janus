@@ -17,9 +17,6 @@ conda install pip
 pip install -r requirements.txt 
 ```
 
-_Note (Stanford NLP Cluster): tested on `titanx` and does not work on `k40` due to
- torch+cuda version issues._
-
 ## Setup on MacOS (CPU-Only)
 Clone the repository, and create a conda environment with `environment-osx.yaml`.
 
@@ -41,6 +38,9 @@ streamlit run main.py -- --device 'cpu'
 ```
 Navigate to the URL to open the app.
 
+_Note (Stanford NLP Cluster): GPU tested on `titanx`. GPU `k40` doesn't work due to
+ torch+cuda version issues, launch the app in CPU-only mode._
+
 
 ### First-Time User
 You'll have to register the first time you use the app. The master password is
@@ -52,7 +52,8 @@ By default, Janus collects and stores all your interactions and generations in t
  stored under `data/<username>` and is not transmitted at this time. 
 
 ## Issues
-If you have any problems using Janus, please file a Github Issue.
+If you have any problems using Janus, please file a Github Issue. Feedback can be
+ given directly to the Project Mercury team.
 
 ## Contributing
 
