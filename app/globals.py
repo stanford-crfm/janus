@@ -18,9 +18,9 @@ MERCURY_MODELS = {
 
 MERCURY_PATHS = {
     'aurora-gpt2-small-x21':
-        '/u/scr/nlp/mercury/mistral-runs/3-28/aurora-gpt2-small-x21/',
+        '/u/scr/nlp/mercury/community/gpt2-small/aurora-gpt2-small-x21/',
     'blizzard-gpt2-small-x49':
-        '/u/scr/nlp/mercury/mistral-runs/4-5/blizzard-gpt2-small-x49/',
+        '/u/scr/nlp/mercury/community/gpt2-small/blizzard-gpt2-small-x49/',
 }
 
 HUGGINGFACE_MODELS = {
