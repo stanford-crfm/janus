@@ -25,4 +25,11 @@ MERCURY_PATHS = {
 
 HUGGINGFACE_MODELS = {
     'GPT2-Small': 'gpt2',
+    'GPT2-Medium': 'gpt2-medium',
+    'GPT2-Large': 'gpt2-large',
+    'GPT2-XL': 'gpt2-xl',
+    'EleutherAI/gpt-neo-125M': 'EleutherAI/gpt-neo-125M',
+    'EleutherAI/gpt-neo-350M': 'EleutherAI/gpt-neo-350M',
+    'EleutherAI/gpt-neo-1.3B': 'EleutherAI/gpt-neo-1.3B',
+    'EleutherAI/gpt-neo-2.7B': 'EleutherAI/gpt-neo-2.7B',
 }
