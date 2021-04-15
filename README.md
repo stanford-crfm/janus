@@ -13,6 +13,7 @@ conda activate janus
 
 # Alternately, create a fresh conda environment
 conda create -n [env_name]
+conda install pip
 pip install -r requirements.txt 
 ```
 
