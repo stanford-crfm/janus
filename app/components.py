@@ -287,7 +287,7 @@ class Janus:
                     'Select Saved Generation',
                     options=list(session.favorites),
                     key=key
-                ) if len(session.favorites) > 1 else session.favorites[0]
+                ) if len(session.favorites) > 1 else list(session.favorites)[0]
             else:
                 generation_index = st.select_slider(
                     'Select Generation',
