@@ -1,5 +1,57 @@
-# Janus
+# Janus: A Project Mercury Endeavor
 An interactive interface for GPT-X, built with Streamlit.
+
+## Setup on Stanford NLP Cluster
+
+```shell script
+# Clone the repository
+git clone https://github.com/stanford-mercury/janus.git
+cd janus
+
+# Use the existing conda environment available on the cluster
+conda activate janus
+
+# Alternately, create a fresh conda environment
+conda create -n [env_name]
+pip install -r requirements.txt 
+```
+
+_Note (Stanford NLP Cluster): tested on `titanx` and does not work on `k40` due to
+ torch+cuda version issues._
+
+## Setup on MacOS (CPU-Only)
+Clone the repository, and create a conda environment with `environment-osx.yaml`.
+
+```shell script
+git clone https://github.com/stanford-mercury/janus.git
+cd janus
+conda env create -f environment-osx.yml
+```
+
+## Running Janus
+Run the streamlit application and you're good to begin!
+
+```shell script
+# Auto-selects device
+streamlit run main.py
+
+# Use CPU-only
+streamlit run main.py -- --device 'cpu' 
+```
+Navigate to the URL to open the app.
+
+
+### First-Time User
+You'll have to register the first time you use the app. The master password is
+ `mercury-bagel`. 
+ 
+## Data Collection Notice
+By default, Janus collects and stores all your interactions and generations in the app 
+(whether you save them explicitly or not). When running the app locally, this data is
+ stored under `data/<username>` and is not transmitted at this time. 
+
+## Issues
+If you have any problems using Janus, please file a Github Issue.
 
 ## Contributing
 
@@ -11,20 +63,3 @@ If contributing to this repository, please make sure to do the following:
   `rm environment.yml; conda env export --no-builds | grep -v "^prefix: " > environment.yml`
 
 ---
-
-
-## Quickstart on MacOS (CPU-Only)
-Clone the repository, and create a conda environment with `environment-osx.yaml`.
-
-```shell script
-git clone https://github.com/stanford-mercury/janus.git
-cd janus
-conda env create -f environment-osx.yml
-```
-
-## Running Janus
-Run the streamlit application and you're good to go!
-
-```shell script
-streamlit run main.py
-```
