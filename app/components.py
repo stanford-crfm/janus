@@ -274,8 +274,12 @@ class Janus:
             session = self.session_history[session_id - 1]
 
             # Select what generations to display
-            only_saved = st.radio(
-                'Generations to Display', options=['Saved', 'All'], key=key)
+            if len(session.favorites) > 0:
+                only_saved = st.radio(
+                    'Generations to Display', options=['All', 'Saved'], key=key)
+            else:
+                only_saved = st.radio(
+                    'Generations to Display', options=['All'], key=key)
 
             # Select the generation index
             if only_saved == 'Saved':
