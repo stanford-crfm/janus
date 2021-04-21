@@ -167,9 +167,7 @@ def get_checkpoints(
     """
 
     # Get the list of all files and folders in the directory
-    print(path)
     candidate_paths = [Path(p) for p in glob(str(path / "*"))]
-    print(candidate_paths)
     # Filter out only the checkpoints
     if not is_checkpoint_fn:
         is_checkpoint_fn = lambda p: p.resolve().name.startswith("checkpoint-")
