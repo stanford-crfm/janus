@@ -1,18 +1,21 @@
 import copy
 import os
 import pandas as pd
+from pathlib import Path
+
 from typing import List
 from types import SimpleNamespace
 
 
 import streamlit as st
 
-from app.model import TextGenerator, instantiate_generator
+from app.model import TextGenerator, instantiate_generator, get_checkpoints
 from app.utils import Generation, Session
 from app.globals import (
     TEXT_GENERATION_ATTRIBUTES,
     MODEL_SOURCES,
     MERCURY_MODELS,
+    MERCURY_PATHS,
     HUGGINGFACE_MODELS,
 )
 
@@ -186,8 +189,6 @@ class Janus:
                         MODEL_SOURCES.remove("Mercury")
 
         # create mapping between models and available checkpoints
-        # mapping = {model : {ckpt_1 : path_1, ckpt_2 : path_2}}
-
         model_to_ckpts = {"Mercury": {}, "Huggingface": {}}
         for model_source in MODEL_SOURCES:
             if model_source == "Mercury":
@@ -218,7 +219,7 @@ class Janus:
         with checkpoints:
             available_ckpts = sum(
                 [
-                    list(model_to_ckpts["Mercury"].keys())
+                    list(model_to_ckpts["Mercury"][model].keys())
                     for model in model_to_ckpts["Mercury"].keys()
                 ],
                 [],
@@ -237,12 +238,12 @@ class Janus:
                 if ckpt in model_to_ckpts["Mercury"][mercury_model].keys():
                     mercury_models[ckpt][mercury_model] = {}
                     mercury_models[ckpt][mercury_model][
-                        model_info
+                        "model_info"
                     ] = SimpleNamespace(
                         model_source="Mercury",
                         model_name=mercury_model,
                         checkpoint=ckpt,
-                        checkpoint_path=model_to_ckpts["Mercury"][ckpt],
+                        checkpoint_path=model_to_ckpts["Mercury"][mercury_model][ckpt],
                     )
 
         hf_models = {}
