@@ -1,22 +1,26 @@
 import copy
 import os
+from types import SimpleNamespace
 from typing import List
 
 import streamlit as st
 
-from app.model import TextGenerator
+from app.model import TextGenerator, checkpoint_widget, instantiate_generator
 from app.utils import Generation, Session
 from app.globals import TEXT_GENERATION_ATTRIBUTES
 
 
 class Janus:
 
-    def __init__(self,
-                 generator: TextGenerator,
-                 current_session: Session,
-                 model_settings: dict,
-                 session_history: List[Session],
-                 username: str):
+    def __init__(
+            self,
+            generator: TextGenerator,
+            current_session: Session,
+            model_settings: dict,
+            session_history: List[Session],
+            username: str,
+            device: str,
+    ):
 
         # Text generator
         self.generator = generator
@@ -31,9 +35,12 @@ class Janus:
             'Annotation': 1,
             'Review': 2,
             'Compare': 3,
+
+            'QA: ELI5': 5,
         }
 
         self.username = username
+        self.device = device
 
     def start(self):
         """
@@ -48,6 +55,8 @@ class Janus:
                 self.layout_review()
             elif self.current_session.mode == 'Compare':
                 self.layout_compare()
+            elif self.modes[self.current_session.mode] == 5:
+                self.layout_qa_eli5()
             else:
                 self.layout_body()
         else:
@@ -145,14 +154,34 @@ class Janus:
         if st.sidebar.button("Save All Sessions"):
             self.save_all_sessions()
 
+    @staticmethod
+    def _create_eli5_context(subreddit, title, selftext):
+        """Combine the pieces of the example that constitute the context and prefix
+        them with "Q: " for question sand "A: " for answer. We mask these out when
+        scoring as they will be provided by the user."""
+        return " ".join(
+            ("Q: " + subreddit + " ; " + title + " ; " + selftext + " A:").split()
+        )
+
+    @staticmethod
+    def _unwrap_eli5_text(text):
+        context, answer = text.split(" A:")
+        subreddit, question, context = context.split(";")
+        return SimpleNamespace(
+            subreddit=subreddit.split("Q: ")[1].strip(),
+            question=question.strip(),
+            context=context.split(" A:")[0].strip(),
+            answer=answer
+        )
+
     def layout_body(self):
         """
         Layout the main body of the application.
         """
         # Heading for main body
         text = st.text_area("Prime GPT-X: Generate conditional outputs", height=100)
-
         generate_text_button = st.button('Generate')
+
         if generate_text_button:
             out = self.generator.generate_text(
                 starting_text=text,
@@ -224,6 +253,68 @@ class Janus:
                 st.write('**Input:** ', generation.input)
                 st.write('**Output:** ', generation.output)
                 st.write('**Attributes:** ', ", ".join(generation.labels))
+
+    def layout_qa_eli5(self):
+        """
+        Create an area for answering ELI5 questions.
+        """
+        st.write("### ELI5: Answer Questions!")
+        st.write("##### Subreddit: explainlikeimfive")
+
+        # Get user input for the question and context
+        subreddit = "explainlikeimfive"
+        question = st.text_area("Question", height=40)
+        context = st.text_area(
+            "Context [Optional Text to Expand on Your Question]",
+            height=200
+        )
+
+        # Combine the subreddit, question, context
+        text = self._create_eli5_context(subreddit, question, context)
+        generate_text_button = st.button('Answer')
+
+        if generate_text_button:
+            out = self.generator.generate_text(
+                starting_text=text,
+                max_length=self.model_settings['num_tokens'],
+                temperature=self.model_settings['temperature'],
+            )
+
+            # Add a generation
+            self.current_session.generations.append(
+                Generation(
+                    model=self.generator.model_name,
+                    config=self.model_settings,
+                    checkpoint=self.checkpoint_info,
+                    input=text,
+                    output=out,
+                    labels=set(),
+                    annotations=[],
+                )
+            )
+
+        variation, raw_variation = st.beta_columns([3, 2])
+
+        with variation:
+            st.subheader('**Current variation**')
+            if self.current_session.generations:
+                unwrapped_output = self._unwrap_eli5_text(
+                    self.current_session.generations[-1].output
+                )
+                st.write('**Subreddit:** ', unwrapped_output.subreddit)
+                st.write('**Question:** ', unwrapped_output.question)
+                st.write('**Context:** ', unwrapped_output.context)
+                st.write('**Answer:** ', unwrapped_output.answer)
+
+            else:
+                st.write("Nothing yet!")
+
+        with raw_variation:
+            with st.beta_expander("View Raw"):
+                st.write('**Raw Input:** ',
+                         self.current_session.generations[-1].input)
+                st.write('**Raw Output:** ',
+                         self.current_session.generations[-1].output)
 
     def layout_review(self):
         """

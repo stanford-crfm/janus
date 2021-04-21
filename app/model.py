@@ -106,6 +106,8 @@ class TextGenerator:
                 model=HUGGINGFACE_MODELS[self.model_name],
                 device={'cpu': -1, 'cuda': 0}[self._device],
             )
+        elif self.model_source == 'Platelet':
+            return self._load_mercury(self.checkpoint_path)
         else:
             raise NotImplementedError(
                 f"Model source {self.model_source} not recognized."
@@ -222,8 +224,14 @@ def checkpoint_widget():
         # No checkpoints available for Huggingface models
         checkpoint = None
         checkpoint_path = None
+    elif model_source == 'Platelet':
+        # Write out a path where the model directory is
+        model_name = None
+        checkpoint = None
+        checkpoint_path = Path(st.sidebar.text_input("Checkpoint Path"))
+
     else:
-        raise NotImplementedError("Model source not recognized.")
+        raise NotImplementedError(f"Model source {model_source} not recognized.")
 
     return SimpleNamespace(
         model_source=model_source,

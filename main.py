@@ -54,5 +54,6 @@ if __name__ == '__main__':
         model_settings=application_state.model_settings,
         session_history=application_state.session_history,
         username=login_state.username,
+        device=args.device,
     )
     janus.start()

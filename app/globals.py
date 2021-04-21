@@ -9,7 +9,7 @@ TEXT_GENERATION_ATTRIBUTES = [
     'Biased',
 ]
 
-MODEL_SOURCES = ['Mercury', 'Huggingface']
+MODEL_SOURCES = ['Mercury', 'Huggingface', 'Platelet']
 
 MERCURY_MODELS = {
     'GPT2-Small: Aurora': 'aurora-gpt2-small-x21',
