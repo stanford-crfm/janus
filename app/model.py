@@ -151,6 +151,7 @@ class TextWithEntityGenerator:
             model_name: str,
             checkpoint: str,
             checkpoint_path: Path,
+            use_ents: bool = True,
             seed: int = 42,
             device: str = None,
             annotator = None,
@@ -174,6 +175,7 @@ class TextWithEntityGenerator:
         self._bootleg_cache = "/dfs/scratch0/lorr1/projects/bootleg/tutorial_data"
         self._bootleg_threshold = 0.2
         self._bootleg_dim = 512
+        self._use_ents = use_ents
 
         # load the language model
         self.model, self.tokenizer = self.load_generator()
@@ -347,9 +349,7 @@ class TextWithEntityGenerator:
         Generate text using the language model.
         """
         unwrapped_text = TextWithEntityGenerator._unwrap_eli5_text(starting_text)
-        print(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
         bootleg_entities = self.annotator.label_mentions(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
-        print(bootleg_entities["titles"], bootleg_entities["probs"])
         # Text: who is my padre loco with purple rain
         # input_ent_ids = [0, 0, 0, 1, 1, 0, 2, 2]
         # entity_matrix = [row of 0, row of 0, padre loco embeddings, purple rain embeddings]
@@ -359,14 +359,17 @@ class TextWithEntityGenerator:
                                                             bootleg_entities["spans"][0],
                                                             bootleg_entities["probs"][0],
                                                             bootleg_entities["embs"][0])
-        print(entity_ids)
         # Tokenizes the ids to be at the subword level
         tokenized_ent_ids, tokenized_text = self._tokenize_text_and_ents(starting_text, entity_ids, self.tokenizer)
         # Hacky way of saving embeddings for model to use in forward pass
         self.model.entity_embeddings = torch.from_numpy(entity_matrix)
+        input_ent_ids = torch.tensor(tokenized_ent_ids).to(self._device).unsqueeze(0)
+        # Set to 0 embedding
+        if not self._use_ents:
+            input_ent_ids = torch.zeros_like(input_ent_ids)
         generated_sequence = self.model.generate(
             input_ids=torch.tensor(tokenized_text).to(self._device).unsqueeze(0),
-            input_ent_ids=torch.tensor(tokenized_ent_ids).to(self._device).unsqueeze(0),
+            input_ent_ids=input_ent_ids,
             max_length=max_length,
             num_return_sequences=num_return_sequences,
             temperature=temperature,
