@@ -13,6 +13,8 @@ from transformers import pipeline, set_seed, TextGenerationPipeline, \
 
 from app.globals import MODEL_SOURCES, MERCURY_MODELS, MERCURY_PATHS, HUGGINGFACE_MODELS
 from app.platelet.models.gptent_encoder import GPT2EntLMHeadModel
+from app.platelet.utils.generation_logits_process import LogitsProcessorList, MinLengthLogitsProcessor
+from app.platelet.utils.generation_stopping_criteria import StoppingCriteriaList, MaxLengthCriteria
 
 
 class TextGenerator:
@@ -91,7 +93,6 @@ class TextGenerator:
         model = AutoModelForCausalLM.from_pretrained(f"{checkpoint_path}"). \
             eval().to(self._device)
         tokenizer = AutoTokenizer.from_pretrained(f"{checkpoint_path}")
-
         return pipeline("text-generation", model=model, tokenizer=tokenizer,
                         device={'cpu': -1, 'cuda': 0}[self._device])
 
@@ -122,7 +123,8 @@ class TextGenerator:
             max_length: int = 100,
             num_return_sequences: int = 1,
             temperature: float = 1.0,
-            top_p: float = 1.0
+            top_p: float = 1.0,
+            do_sample: bool = False
     ) -> str:
         """
         Generate text using the language model.
@@ -132,7 +134,8 @@ class TextGenerator:
             max_length=max_length,
             num_return_sequences=num_return_sequences,
             temperature=temperature,
-            top_p=top_p
+            top_p=top_p,
+            do_sample=do_sample
         )[0]['generated_text']
 
 
@@ -169,7 +172,7 @@ class TextWithEntityGenerator:
             self._device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self._bootleg_cache = "/dfs/scratch0/lorr1/projects/bootleg/tutorial_data"
-        self._bootleg_threshold = 0.5
+        self._bootleg_threshold = 0.2
         self._bootleg_dim = 512
 
         # load the language model
@@ -219,8 +222,9 @@ class TextWithEntityGenerator:
         model = GPT2EntLMHeadModel.from_pretrained(f"{checkpoint_path}"). \
             eval().to(self._device)
         tokenizer = AutoTokenizer.from_pretrained(f"{checkpoint_path}")
-        if tokenizer.pad_token is None:
+        if tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
+            tokenizer.pad_token_id = tokenizer.eos_token_id
         return model, tokenizer
 
     @staticmethod
@@ -336,13 +340,16 @@ class TextWithEntityGenerator:
             max_length: int = 100,
             num_return_sequences: int = 1,
             temperature: float = 1.0,
-            top_p: float = 1.0
+            top_p: float = 1.0,
+            do_sample: bool = False
     ) -> str:
         """
         Generate text using the language model.
         """
         unwrapped_text = TextWithEntityGenerator._unwrap_eli5_text(starting_text)
+        print(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
         bootleg_entities = self.annotator.label_mentions(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
+        print(bootleg_entities["titles"], bootleg_entities["probs"])
         # Text: who is my padre loco with purple rain
         # input_ent_ids = [0, 0, 0, 1, 1, 0, 2, 2]
         # entity_matrix = [row of 0, row of 0, padre loco embeddings, purple rain embeddings]
@@ -352,6 +359,7 @@ class TextWithEntityGenerator:
                                                             bootleg_entities["spans"][0],
                                                             bootleg_entities["probs"][0],
                                                             bootleg_entities["embs"][0])
+        print(entity_ids)
         # Tokenizes the ids to be at the subword level
         tokenized_ent_ids, tokenized_text = self._tokenize_text_and_ents(starting_text, entity_ids, self.tokenizer)
         # Hacky way of saving embeddings for model to use in forward pass
@@ -362,7 +370,8 @@ class TextWithEntityGenerator:
             max_length=max_length,
             num_return_sequences=num_return_sequences,
             temperature=temperature,
-            top_p=top_p
+            top_p=top_p,
+            do_sample=do_sample
         )
         generated_sequence = generated_sequence.squeeze(0).cpu()
         text = self.tokenizer.decode(

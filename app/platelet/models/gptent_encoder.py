@@ -1,16 +1,27 @@
 import logging
+import warnings
+from typing import Optional, Callable, Iterable, List, Union
 
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from transformers import PretrainedConfig
+from transformers.file_utils import ModelOutput
+from transformers.generation_utils import GreedySearchOutput, BeamSearchOutput, BeamSampleOutput, \
+    GreedySearchEncoderDecoderOutput, GreedySearchDecoderOnlyOutput, SampleOutput
+
+from app.platelet.utils.generation_logits_process import LogitsProcessorList
+from app.platelet.utils.generation_stopping_criteria import validate_stopping_criteria, StoppingCriteriaList, \
+    MaxLengthCriteria, MaxTimeCriteria
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
 )
 from transformers.modeling_utils import Conv1D, PreTrainedModel
 from transformers.models.gpt2.modeling_gpt2 import Block
+
+from app.platelet.utils.generation_beam_search import BeamSearchScorer
 
 logger = logging.getLogger(__name__)
 
@@ -501,7 +512,6 @@ class GPT2EntLMHeadModel(GPT2EntPreTrainedModel):
         hidden_states = transformer_outputs[0]
 
         lm_logits = self.lm_head(hidden_states)
-
         loss = None
         if labels is not None:
             # Shift so that tokens < n predict n
