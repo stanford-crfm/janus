@@ -33,3 +33,15 @@ HUGGINGFACE_MODELS = {
     'EleutherAI/gpt-neo-1.3B': 'EleutherAI/gpt-neo-1.3B',
     'EleutherAI/gpt-neo-2.7B': 'EleutherAI/gpt-neo-2.7B',
 }
+
+PLATELET_MODELS = {
+    "GPT2-Small-Ents": "ents_eli5",
+    "GPT2-Small-EntsNulled": "entsnulled_eli5",
+    "GPT2-Small-NoEnts": "noents_eli5",
+}
+
+PLATELET_PATHS = {
+    'ents_eli5': '/dfs/scratch0/lorr1/projects/platelet/logs/ents_eli5/eli5_04-08-2021-16-27-24/outputs/last_model',
+    'entsnulled_eli5': '/dfs/scratch0/lorr1/projects/platelet/logs/ents_eli5/eli5_04-08-2021-16-27-24/outputs/last_model',
+    'noents_eli5': '/dfs/scratch0/lorr1/projects/platelet/logs/no_ents_eli5_2/eli5_04-29-2021-18-59-52/outputs/last_model',
+}

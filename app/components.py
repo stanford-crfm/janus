@@ -312,9 +312,9 @@ class Janus:
         with raw_variation:
             with st.beta_expander("View Raw"):
                 st.write('**Raw Input:** ',
-                         self.current_session.generations[-1].input)
+                         self.current_session.generations[-1].input if len(self.current_session.generations) > 0 else "")
                 st.write('**Raw Output:** ',
-                         self.current_session.generations[-1].output)
+                         self.current_session.generations[-1].output if len(self.current_session.generations) > 0 else "")
 
     def layout_review(self):
         """

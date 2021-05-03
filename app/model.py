@@ -11,10 +11,9 @@ from bootleg.end2end.bootleg_annotator import BootlegAnnotator
 from transformers import pipeline, set_seed, TextGenerationPipeline, \
     AutoModelForCausalLM, AutoTokenizer
 
-from app.globals import MODEL_SOURCES, MERCURY_MODELS, MERCURY_PATHS, HUGGINGFACE_MODELS
+from app.globals import MODEL_SOURCES, MERCURY_MODELS, MERCURY_PATHS, HUGGINGFACE_MODELS, PLATELET_MODELS, \
+    PLATELET_PATHS
 from app.platelet.models.gptent_encoder import GPT2EntLMHeadModel
-from app.platelet.utils.generation_logits_process import LogitsProcessorList, MinLengthLogitsProcessor
-from app.platelet.utils.generation_stopping_criteria import StoppingCriteriaList, MaxLengthCriteria
 
 
 class TextGenerator:
@@ -154,7 +153,7 @@ class TextWithEntityGenerator:
             use_ents: bool = True,
             seed: int = 42,
             device: str = None,
-            annotator = None,
+            annotator=None,
     ):
 
         # store the parameters
@@ -176,6 +175,7 @@ class TextWithEntityGenerator:
         self._bootleg_threshold = 0.2
         self._bootleg_dim = 512
         self._use_ents = use_ents
+        print(f"Using Ents {self._use_ents}")
 
         # load the language model
         self.model, self.tokenizer = self.load_generator()
@@ -183,7 +183,7 @@ class TextWithEntityGenerator:
             self.annotator = self.load_annotator()
         else:
             self.annotator = annotator
-        
+
     def get_checkpoint_info(self):
         return {
             'model_source': self.model_source,
@@ -258,19 +258,20 @@ class TextWithEntityGenerator:
             """Combine ent ids of the pieces of the example that constitute the context and prefix
             them with -1 to match the "Q: " and "A: ". We have one ent id for each word."""
             return (
-                [-1]
-                + [-1] * len(subreddit_text.split())
-                + [-1]
-                + title_ents
-                + [-1]
-                + selftext_ents
-                + [-1]
+                    [-1]
+                    + [-1] * len(subreddit_text.split())
+                    + [-1]
+                    + title_ents
+                    + [-1]
+                    + selftext_ents
+                    + [-1]
             )
+
         merged_sentence = f"{unwrapped_text.question} ||| {unwrapped_text.context}"
         text_len = len(merged_sentence.split())
         # Add the PAD/UNK entity embeddings
         final_embs = [np.zeros(self._bootleg_dim), np.zeros(self._bootleg_dim)]
-        entity_ids = [-1]*text_len
+        entity_ids = [-1] * text_len
         ent_id = 0
         for i in range(len(spans)):
             span = spans[i]
@@ -291,7 +292,7 @@ class TextWithEntityGenerator:
         assert len(entity_ids) == len(joint_sentence)
         index_to_split = joint_sentence.index("|||")
         title_ents = entity_ids[:index_to_split]
-        selftext_ents = entity_ids[index_to_split+1:]
+        selftext_ents = entity_ids[index_to_split + 1:]
         parsed_entity_ids = _create_entity_context(unwrapped_text.subreddit, title_ents, selftext_ents)
         # Add 2 for the unk/pad entity
         parsed_entity_ids = list(map(lambda x: x + 2, parsed_entity_ids))
@@ -299,7 +300,7 @@ class TextWithEntityGenerator:
         return parsed_entity_ids, final_embs
 
     def _tokenize_text_and_ents(
-        self, starting_text, entity_ids, tokenizer, add_space_first_tok=False
+            self, starting_text, entity_ids, tokenizer, add_space_first_tok=False
     ):
         """Converts word split tokens and entity ids into subword equivalents."""
         tokenized_ents = []
@@ -326,6 +327,7 @@ class TextWithEntityGenerator:
         """
 
         if self.model_source == 'Platelet':
+            print(f"Loading Model {self.checkpoint_path}")
             return self._load_ent_model(self.checkpoint_path)
         else:
             raise NotImplementedError(
@@ -343,17 +345,20 @@ class TextWithEntityGenerator:
             num_return_sequences: int = 1,
             temperature: float = 1.0,
             top_p: float = 1.0,
-            do_sample: bool = False
+            do_sample: bool = True
     ) -> str:
         """
         Generate text using the language model.
         """
         unwrapped_text = TextWithEntityGenerator._unwrap_eli5_text(starting_text)
-        bootleg_entities = self.annotator.label_mentions(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
+        if self.annotator is None:
+            bootleg_entities = {"spans": [[]], "probs": [[]], "embs": [[]]}
+        else:
+            bootleg_entities = self.annotator.label_mentions(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
         # Text: who is my padre loco with purple rain
         # input_ent_ids = [0, 0, 0, 1, 1, 0, 2, 2]
         # entity_matrix = [row of 0, row of 0, padre loco embeddings, purple rain embeddings]
-        
+
         # Geting entity inputs for model
         entity_ids, entity_matrix = self._tokenize_entities(unwrapped_text,
                                                             bootleg_entities["spans"][0],
@@ -367,6 +372,8 @@ class TextWithEntityGenerator:
         # Set to 0 embedding
         if not self._use_ents:
             input_ent_ids = torch.zeros_like(input_ent_ids)
+        print(f"Max Length {max_length}")
+        print("INPUT IDS", input_ent_ids)
         generated_sequence = self.model.generate(
             input_ids=torch.tensor(tokenized_text).to(self._device).unsqueeze(0),
             input_ent_ids=input_ent_ids,
@@ -393,18 +400,31 @@ def instantiate_generator(
         checkpoint_path: Path,
         seed: int = 42,
         device: str = None,
+        annotator: BootlegAnnotator = None,
 ):
     """
     Create a generator.
     """
-    return TextGenerator(
-        model_source=model_source,
-        model_name=model_name,
-        checkpoint=checkpoint,
-        checkpoint_path=checkpoint_path,
-        seed=seed,
-        device=device,
-    )
+    if model_source == "Platelet":
+        return TextWithEntityGenerator(
+            model_source=model_source,
+            model_name=model_name,
+            checkpoint=checkpoint,
+            checkpoint_path=checkpoint_path,
+            use_ents=checkpoint == "ents_eli5",
+            seed=seed,
+            device=device,
+            annotator=annotator,
+        )
+    else:
+        return TextGenerator(
+            model_source=model_source,
+            model_name=model_name,
+            checkpoint=checkpoint,
+            checkpoint_path=checkpoint_path,
+            seed=seed,
+            device=device,
+        )
 
 
 def get_checkpoints(
@@ -451,7 +471,7 @@ def checkpoint_widget():
 
     # Select the model source
     model_source = st.sidebar.radio("Model Source", options=MODEL_SOURCES)
-
+    print("The model source is", model_source)
     if model_source == 'Mercury':
         # Hardcode the models that are supported by Mercury
         model_name = st.sidebar.selectbox(
@@ -477,11 +497,14 @@ def checkpoint_widget():
         checkpoint = None
         checkpoint_path = None
     elif model_source == 'Platelet':
-        # Write out a path where the model directory is
-        model_name = None
-        checkpoint = None
-        checkpoint_path = Path(st.sidebar.text_input("Checkpoint Path"))
+        # Hardcode the models that are supported by Mercury
+        model_name = st.sidebar.selectbox(
+            "Model", options=list(PLATELET_MODELS.keys())
+        )
 
+        # Select from the list of available model checkpoints
+        checkpoint = PLATELET_MODELS[model_name]
+        checkpoint_path = Path(PLATELET_PATHS[checkpoint])
     else:
         raise NotImplementedError(f"Model source {model_source} not recognized.")
 
