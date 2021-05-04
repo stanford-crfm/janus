@@ -335,7 +335,7 @@ class TextWithEntityGenerator:
             )
 
     def load_annotator(self) -> BootlegAnnotator:
-        ann = BootlegAnnotator(cache_dir=self._bootleg_cache, device=self._device, return_embs=True)
+        ann = load_annotator_helper(cache_dir=self._bootleg_cache, device=self._device, return_embs=True)
         return ann
 
     def generate_text(
@@ -390,6 +390,12 @@ class TextWithEntityGenerator:
             clean_up_tokenization_spaces=False,
         )
         return text
+
+
+@st.cache(allow_output_mutation=True)
+def load_annotator_helper(cache_dir, device, return_embs):
+    ann = BootlegAnnotator(cache_dir=cache_dir, device=device, return_embs=return_embs)
+    return ann
 
 
 @st.cache(allow_output_mutation=True)
