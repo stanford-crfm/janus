@@ -273,12 +273,19 @@ class Janus:
         text = self._create_eli5_context(subreddit, question, context)
         generate_text_button = st.button('Answer')
 
+        out_qids = '' # only need this to silence an unnecessary error message that was occurring
         if generate_text_button:
-            out = self.generator.generate_text(
+            out_text, out_qids = self.generator.generate_text(
                 starting_text=text,
                 max_length=self.model_settings['num_tokens'],
                 temperature=self.model_settings['temperature'],
             )
+
+            # out_qids should be either (A) in a format like [['Q123', 'Q456']] or [[]], if the model uses
+            # entities, or (B) should be a string, if the model does NOT use entities
+            assert isinstance(out_qids, str) or (len(out_qids) == 1 and isinstance(out_qids[0], list))
+            if not isinstance(out_qids, str):
+                out_qids = out_qids[0]
 
             # Add a generation
             self.current_session.generations.append(
@@ -287,7 +294,8 @@ class Janus:
                     config=self.model_settings,
                     checkpoint=self.checkpoint_info,
                     input=text,
-                    output=out,
+                    output=out_text,
+                    ##### TODO: add out_qids to Generation as well???
                     labels=set(),
                     annotations=[],
                 )
@@ -304,6 +312,16 @@ class Janus:
                 st.write('**Subreddit:** ', unwrapped_output.subreddit)
                 st.write('**Question:** ', unwrapped_output.question)
                 st.write('**Context:** ', unwrapped_output.context)
+                
+                # Print entities identified by Bootleg (with links to Wikipedia pages)
+                if isinstance(out_qids, str):
+                    entity_text = out_qids # if model doesn't use entities, just print the N/A message
+                else:
+                    wiki_base_url = "https://en.wikipedia.org/wiki/"
+                    wiki_titles = [self.generator.qid2title[qid] for qid in out_qids]
+                    entity_text = ', '.join([f"[{title}]({wiki_base_url + '_'.join(title.split())})" for title in wiki_titles])
+                st.write('**Entities labeled by Bootleg:**', entity_text)
+                
                 st.write('**Answer:** ', unwrapped_output.answer)
 
             else:

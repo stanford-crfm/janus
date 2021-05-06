@@ -7,6 +7,7 @@ import os
 import numpy as np
 import streamlit as st
 import torch
+import ujson
 from bootleg.end2end.bootleg_annotator import BootlegAnnotator
 from transformers import pipeline, set_seed, TextGenerationPipeline, \
     AutoModelForCausalLM, AutoTokenizer
@@ -177,6 +178,9 @@ class TextWithEntityGenerator:
         self._use_ents = use_ents
         print(f"Using Ents {self._use_ents}")
 
+        self.qid2title_path = "/dfs/scratch0/lorr1/projects/bootleg/tutorial_data/data/entity_db/entity_mappings/qid2title.json"
+        self.qid2title = self.load_qid2title()
+
         # load the language model
         self.model, self.tokenizer = self.load_generator()
         if annotator is None:
@@ -338,6 +342,12 @@ class TextWithEntityGenerator:
         ann = load_annotator_helper(cache_dir=self._bootleg_cache, device=self._device, return_embs=True)
         return ann
 
+    def load_qid2title(self) -> dict:
+        print("Loading qid2title mapping")
+        q2t =  ujson.load(open(self.qid2title_path, 'r'))
+        print("Done loading qid2title mapping")
+        return q2t
+
     def generate_text(
             self,
             starting_text: str,
@@ -389,12 +399,17 @@ class TextWithEntityGenerator:
             skip_special_tokens=True,
             clean_up_tokenization_spaces=False,
         )
-        return text
+        if self._use_ents:
+            return text, bootleg_entities['qids']
+        else:
+            return text, 'N/A (current model does not use entities)'
 
 
 @st.cache(allow_output_mutation=True)
 def load_annotator_helper(cache_dir, device, return_embs):
+    print("Loading BootlegAnnotator")
     ann = BootlegAnnotator(cache_dir=cache_dir, device=device, return_embs=return_embs)
+    print("Done loading BootlegAnnotator")
     return ann
 
 
