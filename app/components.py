@@ -2,6 +2,7 @@ import copy
 import os
 from types import SimpleNamespace
 from typing import List
+import pandas as pd
 
 import streamlit as st
 
@@ -258,23 +259,45 @@ class Janus:
         """
         Create an area for answering ELI5 questions.
         """
-        st.write("### ELI5: Answer Questions!")
+        st.write("## ELI5: Answer Questions!")
         st.write("##### Subreddit: explainlikeimfive")
 
-        # Get user input for the question and context
-        subreddit = "explainlikeimfive"
-        question = st.text_area("Question", height=40)
-        context = st.text_area(
-            "Context [Optional Text to Expand on Your Question]",
-            height=200
-        )
+        st.write("### Option 1: Choose a pre-written question from the ELI5 test set")
+        with st.beta_expander("Choose a pre-written question"):
+            # Dropdown where user can just run the model on ELI5 examples from the test set
+            eli5_test_qs = load_eli5_test_qs()
+            eli5_dropdown = st.selectbox(
+                "Select a question",
+                options=range(len(eli5_test_qs['whole_question'])), # using workaround so I can get the index
+                format_func=lambda idx: eli5_test_qs['whole_question'][idx]
+            )
+            st.write("You selected:")
+            st.write(eli5_test_qs['whole_question'][eli5_dropdown])
+            generate_text_button_1 = st.button('Answer', key='answer1')
 
-        # Combine the subreddit, question, context
-        text = self._create_eli5_context(subreddit, question, context)
-        generate_text_button = st.button('Answer')
+
+        st.write("### Option 2: Write your own question!")
+        with st.beta_expander("Write your own question"):
+            # Get user input for the question and context
+            subreddit = "explainlikeimfive"
+            question = st.text_area("Question", height=40)
+            context = st.text_area(
+                "Context [Optional Text to Expand on Your Question]",
+                height=200
+            )
+            generate_text_button_2 = st.button('Answer', key='answer2')
 
         out_qids = '' # only need this to silence an unnecessary error message that was occurring
-        if generate_text_button:
+        if generate_text_button_1 or generate_text_button_2:
+            if generate_text_button_1:
+                # Combine the subreddit, question, context
+                text = self._create_eli5_context(subreddit, 
+                                                 eli5_test_qs['title'][eli5_dropdown],
+                                                 eli5_test_qs['selftext'][eli5_dropdown])
+            elif generate_text_button_2:
+                # Combine the subreddit, question, context
+                text = self._create_eli5_context(subreddit, question, context)
+
             out_text, out_qids = self.generator.generate_text(
                 starting_text=text,
                 max_length=self.model_settings['num_tokens'],
@@ -423,3 +446,15 @@ class Janus:
 
         with col2:
             _layout_column('2')
+
+
+@st.cache
+def load_eli5_test_qs():
+    eli5_test_set_path = "/dfs/scratch0/lorr1/projects/platelet-data/data/eli5/eli5-test_eli5_ent.json"
+    data = pd.read_json(eli5_test_set_path, lines=True)
+    data = data[['title', 'selftext']]
+    data['whole_question'] = data['title'] + " " + data['selftext']
+    # Just return 15000 random questions, not all of them (feel free to choose a different number)
+    data = data.sample(n=15000, random_state=123)
+    data = data.reset_index(drop=True)
+    return data
