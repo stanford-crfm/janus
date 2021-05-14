@@ -3,6 +3,7 @@ import os
 from types import SimpleNamespace
 from typing import List
 import pandas as pd
+import wikipedia
 
 import streamlit as st
 
@@ -261,6 +262,7 @@ class Janus:
         """
         st.write("## ELI5: Answer Questions!")
         st.write("##### Subreddit: explainlikeimfive")
+        wiki_base_url = "https://en.wikipedia.org/wiki/"
 
         st.write("### Option 1: Choose a pre-written question from the ELI5 test set")
         with st.beta_expander("Choose a pre-written question"):
@@ -280,15 +282,40 @@ class Janus:
         with st.beta_expander("Write your own question"):
             # Get user input for the question and context
             subreddit = "explainlikeimfive"
-            question = st.text_area("Question", height=40)
+            question = st.text_area("Question", key='question1', height=40)
             context = st.text_area(
                 "Context [Optional Text to Expand on Your Question]",
+                key='context1',
                 height=200
             )
             generate_text_button_2 = st.button('Answer', key='answer2')
 
+        st.write("### Option 3: Write your own question with customizable entities")
+        with st.beta_expander("Write your own question with customizable entities"):
+            question = st.text_area("Question", key='question2', height=40)
+            context = st.text_area(
+                "Context [Optional Text to Expand on Your Question]",
+                key='context2',
+                height=200
+            )
+            generate_text_button_3 = st.button('Answer', key='answer3')
+
+            st.write("#### Wikipedia Search Helper")
+            entity_search_text = st.text_input("Search for entity in Wikipedia (press 'Enter' to search)")
+            if entity_search_text:
+                choices = wikipedia.search(entity_search_text, results=100)
+                choices = [x for x in choices if x in self.generator.title2qid]
+                wiki_results = st.selectbox(
+                    "Choose correct entity",
+                    options=choices
+                )
+                st.markdown(
+                    f"[{wiki_results}]({wiki_base_url + '_'.join(wiki_results.split())}) &rarr; **{self.generator.title2qid[wiki_results]}**"
+                )
+
         out_qids = '' # only need this to silence an unnecessary error message that was occurring
-        if generate_text_button_1 or generate_text_button_2:
+        if generate_text_button_1 or generate_text_button_2 or generate_text_button_3:
+            use_custom_entities = False
             if generate_text_button_1:
                 # Combine the subreddit, question, context
                 text = self._create_eli5_context(subreddit, 
@@ -297,11 +324,15 @@ class Janus:
             elif generate_text_button_2:
                 # Combine the subreddit, question, context
                 text = self._create_eli5_context(subreddit, question, context)
+            elif generate_text_button_3:
+                text = self._create_eli5_context(subreddit, question, context)
+                use_custom_entities = True
 
             out_text, out_qids = self.generator.generate_text(
                 starting_text=text,
                 max_length=self.model_settings['num_tokens'],
                 temperature=self.model_settings['temperature'],
+                custom_entities=use_custom_entities
             )
 
             # out_qids should be either (A) in a format like [['Q123', 'Q456']] or [[]], if the model uses
@@ -340,7 +371,6 @@ class Janus:
                 if isinstance(out_qids, str):
                     entity_text = out_qids # if model doesn't use entities, just print the N/A message
                 else:
-                    wiki_base_url = "https://en.wikipedia.org/wiki/"
                     wiki_titles = [self.generator.qid2title[qid] for qid in out_qids]
                     entity_text = ', '.join([f"[{title}]({wiki_base_url + '_'.join(title.split())})" for title in wiki_titles])
                 st.write('**Entities labeled by Bootleg:**', entity_text)

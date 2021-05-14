@@ -2,6 +2,7 @@ from collections import Callable, OrderedDict
 from glob import glob
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Tuple
 
 import os
 import numpy as np
@@ -15,6 +16,7 @@ from transformers import pipeline, set_seed, TextGenerationPipeline, \
 from app.globals import MODEL_SOURCES, MERCURY_MODELS, MERCURY_PATHS, HUGGINGFACE_MODELS, PLATELET_MODELS, \
     PLATELET_PATHS
 from app.platelet.models.gptent_encoder import GPT2EntLMHeadModel
+from app.utils import custom_entity_extractor
 
 
 class TextGenerator:
@@ -180,6 +182,7 @@ class TextWithEntityGenerator:
 
         self.qid2title_path = "/dfs/scratch0/lorr1/projects/bootleg/tutorial_data/data/entity_db/entity_mappings/qid2title.json"
         self.qid2title = self.load_qid2title()
+        self.title2qid = {value: key for key, value in self.qid2title.items()}
 
         # load the language model
         self.model, self.tokenizer = self.load_generator()
@@ -253,7 +256,7 @@ class TextWithEntityGenerator:
             answer=answer
         )
 
-    def _tokenize_entities(self, unwrapped_text, spans, probs, embs) -> (torch.Tensor, np.ndarray):
+    def _tokenize_entities(self, unwrapped_text, spans, probs, embs) -> Tuple[torch.Tensor, np.ndarray]:
         """Turns the Bootleg outputs into entity ids for the forward to the model. Also outputs
         the embedding matrix."""
         assert len(embs) == len(spans)
@@ -355,7 +358,8 @@ class TextWithEntityGenerator:
             num_return_sequences: int = 1,
             temperature: float = 1.0,
             top_p: float = 1.0,
-            do_sample: bool = True
+            do_sample: bool = True,
+            custom_entities: bool = False
     ) -> str:
         """
         Generate text using the language model.
@@ -364,7 +368,20 @@ class TextWithEntityGenerator:
         if self.annotator is None:
             bootleg_entities = {"spans": [[]], "probs": [[]], "embs": [[]]}
         else:
-            bootleg_entities = self.annotator.label_mentions(f"{unwrapped_text.question} ||| {unwrapped_text.context}")
+            combined_text = f"{unwrapped_text.question} ||| {unwrapped_text.context}"
+            if custom_entities:
+                # If using custom entities, need to get embeddings, spans, etc. from the annotator
+                bootleg_entities, clean_text = custom_entity_extractor(combined_text, self.qid2title, self.annotator)
+                # Also need to update starting_text and unwrapped_text to process the sentence without 
+                # the entity annotations
+                clean_question, clean_context = clean_text.split(" ||| ")
+                starting_text = TextWithEntityGenerator._create_eli5_context(
+                                            unwrapped_text.subreddit, clean_question, clean_context
+                                            )
+                unwrapped_text = TextWithEntityGenerator._unwrap_eli5_text(starting_text)
+            else:
+                bootleg_entities = self.annotator.label_mentions(combined_text)
+
         # Text: who is my padre loco with purple rain
         # input_ent_ids = [0, 0, 0, 1, 1, 0, 2, 2]
         # entity_matrix = [row of 0, row of 0, padre loco embeddings, purple rain embeddings]

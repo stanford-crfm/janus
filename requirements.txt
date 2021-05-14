@@ -4,3 +4,4 @@ jsonlines
 natsort
 torch
 bootleg
+wikipedia
