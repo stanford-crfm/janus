@@ -286,7 +286,7 @@ class Janus:
             context = st.text_area(
                 "Context [Optional Text to Expand on Your Question]",
                 key='context1',
-                height=200
+                height=30
             )
             generate_text_button_2 = st.button('Answer', key='answer2')
 
@@ -296,7 +296,7 @@ class Janus:
             context = st.text_area(
                 "Context [Optional Text to Expand on Your Question]",
                 key='context2',
-                height=200
+                height=30
             )
             generate_text_button_3 = st.button('Answer', key='answer3')
 
