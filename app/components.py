@@ -292,6 +292,13 @@ class Janus:
 
         st.write("### Option 3: Write your own question with customizable entities")
         with st.beta_expander("Write your own question with customizable entities"):
+            st.write("Please follow these instructions closely. Label a section of text by surrounding it with \
+                      curly brackets, followed immediately by the desired entity's QID (i.e., unique ID) \
+                      enclosed in regular brackets. There should NOT be any spaces separating the two sets \
+                      of brackets. For example, in the sentence, 'Was George Washington \
+                      married to Martha Washington?', you could enter the following:")
+            st.write("Was {George Washington}[Q23] married to {Martha Washington}[Q191789]?")
+            st.write("To find the QID of your desired entity, use the 'Wikipedia Search Helper' below.")
             question = st.text_area("Question", key='question2', height=40)
             context = st.text_area(
                 "Context [Optional Text to Expand on Your Question]",
