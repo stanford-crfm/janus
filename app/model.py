@@ -347,7 +347,7 @@ class TextWithEntityGenerator:
 
     def load_qid2title(self) -> dict:
         print("Loading qid2title mapping")
-        q2t =  ujson.load(open(self.qid2title_path, 'r'))
+        q2t = ujson.load(open(self.qid2title_path, 'r'))
         print("Done loading qid2title mapping")
         return q2t
 
@@ -393,8 +393,9 @@ class TextWithEntityGenerator:
                                                             bootleg_entities["embs"][0])
         # Tokenizes the ids to be at the subword level
         tokenized_ent_ids, tokenized_text = self._tokenize_text_and_ents(starting_text, entity_ids, self.tokenizer)
+        print("MAT", entity_matrix[:,:5])
         # Hacky way of saving embeddings for model to use in forward pass
-        self.model.entity_embeddings = torch.from_numpy(entity_matrix)
+        self.model.transformer.ent_embeddings = torch.from_numpy(entity_matrix).float()
         input_ent_ids = torch.tensor(tokenized_ent_ids).to(self._device).unsqueeze(0)
         # Set to 0 embedding
         if not self._use_ents:

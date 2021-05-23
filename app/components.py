@@ -282,8 +282,8 @@ class Janus:
         with st.beta_expander("Write your own question"):
             # Get user input for the question and context
             subreddit = "explainlikeimfive"
-            question = st.text_area("Question", key='question1', height=40)
-            context = st.text_area(
+            question_2 = st.text_area("Question", key='question1', height=40)
+            context_2 = st.text_area(
                 "Context [Optional Text to Expand on Your Question]",
                 key='context1',
                 height=30
@@ -299,8 +299,8 @@ class Janus:
                       married to Martha Washington?', you could enter the following:")
             st.write("Was {George Washington}[Q23] married to {Martha Washington}[Q191789]?")
             st.write("To find the QID of your desired entity, use the 'Wikipedia Search Helper' below.")
-            question = st.text_area("Question", key='question2', height=40)
-            context = st.text_area(
+            question_3 = st.text_area("Question", key='question2', height=40)
+            context_3 = st.text_area(
                 "Context [Optional Text to Expand on Your Question]",
                 key='context2',
                 height=30
@@ -330,9 +330,9 @@ class Janus:
                                                  eli5_test_qs['selftext'][eli5_dropdown])
             elif generate_text_button_2:
                 # Combine the subreddit, question, context
-                text = self._create_eli5_context(subreddit, question, context)
+                text = self._create_eli5_context(subreddit, question_2, context_2)
             elif generate_text_button_3:
-                text = self._create_eli5_context(subreddit, question, context)
+                text = self._create_eli5_context(subreddit, question_3, context_3)
                 use_custom_entities = True
 
             out_text, out_qids = self.generator.generate_text(

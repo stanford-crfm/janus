@@ -134,9 +134,10 @@ def custom_entity_extractor(text, qid2title, annotator):
         }
         for qid in qids
     ]
+    print("HERE", extracted_exs)
     # Run the above entities through Bootleg to get the "contextualized static embeddings"
     out_dict = annotator.label_mentions(extracted_examples=extracted_exs)
-
+    print(out_dict)
     # Format things so that we can return only the necessary outputs
     return_dict = {}
     assert qids == [x[0] for x in out_dict['qids']]

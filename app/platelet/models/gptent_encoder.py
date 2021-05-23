@@ -11,7 +11,7 @@ from transformers.modeling_outputs import (
     CausalLMOutputWithCrossAttentions,
 )
 from transformers.modeling_utils import Conv1D, PreTrainedModel
-from transformers.models.gpt2.modeling_gpt2 import Block
+from transformers.models.gpt2.modeling_gpt2 import GPT2Block
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class GPT2EntConfig(PretrainedConfig):
         summary_activation=None,
         summary_proj_to_labels=True,
         summary_first_dropout=0.1,
+        scale_attn_weights=True,
         gradient_checkpointing=False,
         use_cache=True,
         bos_token_id=50256,
@@ -79,6 +80,7 @@ class GPT2EntConfig(PretrainedConfig):
         self.summary_first_dropout = summary_first_dropout
         self.summary_proj_to_labels = summary_proj_to_labels
         self.gradient_checkpointing = gradient_checkpointing
+        self.scale_attn_weights = scale_attn_weights
         self.use_cache = use_cache
         self.ent_hidden_size = ent_hidden_size
         self.ent_num_hidden_layers = ent_num_hidden_layers
@@ -145,14 +147,14 @@ class GPT2EntModel(GPT2EntPreTrainedModel):
         self.wpe = nn.Embedding(config.n_positions, config.n_embd)
         self.drop = nn.Dropout(config.embd_pdrop)
         self.h = nn.ModuleList(
-            [Block(config.n_ctx, config, scale=True) for _ in range(config.n_layer)]
+            [GPT2Block(config) for _ in range(config.n_layer)]
         )
         self.ln_f = nn.LayerNorm(config.n_embd, eps=config.layer_norm_epsilon)
         if config.ent_emb_file is not None:
             # Add extra decoder layers to self.h. We will make sure to mix in the entity embeddings after
             # the original self.h layers and before these new ones
             for _ in range(config.ent_num_hidden_layers):
-                self.h.append(Block(config.n_ctx, config, scale=True))
+                self.h.append(GPT2Block(config))
 
             self.ent_embeddings = torch.from_numpy(np.load(config.ent_emb_file)).float()
             input_dim = config.n_embd + self.ent_embeddings.shape[1]
